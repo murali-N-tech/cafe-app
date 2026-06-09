@@ -126,7 +126,10 @@ exports.getOrders = async (req, res) => {
 // @access  Private
 exports.getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findOne({
+      _id: req.params.id,
+      cafe_id: req.user.cafe_id,
+    })
       .populate('table_id', 'table_number')
       .populate('waiter_id', 'username')
       .populate('items.menu_item_id', 'item_name');

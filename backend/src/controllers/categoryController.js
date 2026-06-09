@@ -5,7 +5,7 @@ const Category = require('../models/Category');
 // @access  Private
 exports.getCategories = async (req, res) => {
   try {
-    const { cafe_id } = req.query || req.user.cafe_id;
+    const cafe_id = req.user.cafe_id;
     const categories = await Category.find({ cafe_id })
       .sort({ display_order: 1 });
 
@@ -24,7 +24,10 @@ exports.getCategories = async (req, res) => {
 // @access  Private
 exports.getCategoryById = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
+    const category = await Category.findOne({
+      _id: req.params.id,
+      cafe_id: req.user.cafe_id,
+    });
 
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
@@ -68,8 +71,11 @@ exports.updateCategory = async (req, res) => {
   try {
     const { category_name, description, image_url, display_order, is_available } = req.body;
 
-    const category = await Category.findByIdAndUpdate(
-      req.params.id,
+    const category = await Category.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        cafe_id: req.user.cafe_id,
+      },
       {
         category_name,
         description,
@@ -96,7 +102,10 @@ exports.updateCategory = async (req, res) => {
 // @access  Private/Admin
 exports.deleteCategory = async (req, res) => {
   try {
-    const category = await Category.findByIdAndDelete(req.params.id);
+    const category = await Category.findOneAndDelete({
+      _id: req.params.id,
+      cafe_id: req.user.cafe_id,
+    });
 
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });

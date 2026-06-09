@@ -116,7 +116,7 @@ const orderSchema = new mongoose.Schema({
 });
 
 // Calculate totals before saving
-orderSchema.pre('save', function (next) {
+orderSchema.pre('save', function () {
   // Calculate subtotal from items
   this.subtotal = this.items.reduce((sum, item) => {
     const itemPrice = item.unit_price * item.quantity;
@@ -131,13 +131,10 @@ orderSchema.pre('save', function (next) {
   // Calculate total
   this.total_amount =
     this.subtotal + this.tax_amount + this.service_charge - this.discount_amount;
-
-  next();
 });
 
 // Create indexes for efficient queries
 orderSchema.index({ cafe_id: 1, status: 1, created_at: -1 });
 orderSchema.index({ cafe_id: 1, table_id: 1 });
-orderSchema.index({ order_number: 1 });
 
 module.exports = mongoose.model('Order', orderSchema);

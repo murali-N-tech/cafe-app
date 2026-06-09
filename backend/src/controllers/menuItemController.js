@@ -6,11 +6,18 @@ const Category = require('../models/Category');
 // @access  Private
 exports.getMenuItems = async (req, res) => {
   try {
-    const { cafe_id, category_id, is_available } = req.query;
+    const { category_id, is_available, search, popular_only } = req.query;
     const query = { cafe_id: req.user.cafe_id };
 
     if (category_id) query.category_id = category_id;
     if (is_available !== undefined) query.is_available = is_available === 'true';
+    if (popular_only === 'true') query.is_popular = true;
+    if (search) {
+      query.$or = [
+        { item_name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
+    }
 
     const items = await MenuItem.find(query)
       .populate('category_id', 'category_name')
@@ -31,7 +38,10 @@ exports.getMenuItems = async (req, res) => {
 // @access  Private
 exports.getMenuItemById = async (req, res) => {
   try {
-    const item = await MenuItem.findById(req.params.id)
+    const item = await MenuItem.findOne({
+      _id: req.params.id,
+      cafe_id: req.user.cafe_id,
+    })
       .populate('category_id', 'category_name');
 
     if (!item) {
@@ -70,7 +80,10 @@ exports.createMenuItem = async (req, res) => {
     }
 
     // Verify category exists
-    const category = await Category.findById(category_id);
+    const category = await Category.findOne({
+      _id: category_id,
+      cafe_id: req.user.cafe_id,
+    });
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
     }
@@ -114,8 +127,11 @@ exports.updateMenuItem = async (req, res) => {
       is_popular,
     } = req.body;
 
-    const item = await MenuItem.findByIdAndUpdate(
-      req.params.id,
+    const item = await MenuItem.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        cafe_id: req.user.cafe_id,
+      },
       {
         item_name,
         description,
@@ -147,7 +163,10 @@ exports.updateMenuItem = async (req, res) => {
 // @access  Private/Admin
 exports.deleteMenuItem = async (req, res) => {
   try {
-    const item = await MenuItem.findByIdAndDelete(req.params.id);
+    const item = await MenuItem.findOneAndDelete({
+      _id: req.params.id,
+      cafe_id: req.user.cafe_id,
+    });
 
     if (!item) {
       return res.status(404).json({ message: 'Menu item not found' });
@@ -170,8 +189,11 @@ exports.addVariant = async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const item = await MenuItem.findByIdAndUpdate(
-      req.params.id,
+    const item = await MenuItem.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        cafe_id: req.user.cafe_id,
+      },
       {
         $push: {
           variants: {
@@ -207,8 +229,11 @@ exports.addAddon = async (req, res) => {
         .json({ message: 'Addon name and price are required' });
     }
 
-    const item = await MenuItem.findByIdAndUpdate(
-      req.params.id,
+    const item = await MenuItem.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        cafe_id: req.user.cafe_id,
+      },
       {
         $push: {
           addons: {

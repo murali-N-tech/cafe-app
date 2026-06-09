@@ -30,9 +30,10 @@ exports.getTables = async (req, res) => {
 // @access  Private
 exports.getTableById = async (req, res) => {
   try {
-    const table = await Table.findById(req.params.id).populate(
-      'current_order_id'
-    );
+    const table = await Table.findOne({
+      _id: req.params.id,
+      cafe_id: req.user.cafe_id,
+    }).populate('current_order_id');
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
@@ -78,8 +79,11 @@ exports.updateTable = async (req, res) => {
   try {
     const { table_number, capacity, status, notes, is_active } = req.body;
 
-    const table = await Table.findByIdAndUpdate(
-      req.params.id,
+    const table = await Table.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        cafe_id: req.user.cafe_id,
+      },
       {
         table_number,
         capacity,
@@ -112,8 +116,11 @@ exports.updateTableStatus = async (req, res) => {
       return res.status(400).json({ message: 'Status is required' });
     }
 
-    const table = await Table.findByIdAndUpdate(
-      req.params.id,
+    const table = await Table.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        cafe_id: req.user.cafe_id,
+      },
       { status, updated_at: Date.now() },
       { new: true }
     ).populate('current_order_id');
@@ -133,7 +140,10 @@ exports.updateTableStatus = async (req, res) => {
 // @access  Private/Admin
 exports.deleteTable = async (req, res) => {
   try {
-    const table = await Table.findByIdAndDelete(req.params.id);
+    const table = await Table.findOneAndDelete({
+      _id: req.params.id,
+      cafe_id: req.user.cafe_id,
+    });
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
@@ -161,10 +171,9 @@ exports.getTableOccupancyStats = async (req, res) => {
       occupancy_rate: 0,
     };
 
-    stats.occupancy_rate = (
-      (stats.occupied / stats.total_tables) *
-      100
-    ).toFixed(2);
+    stats.occupancy_rate = stats.total_tables
+      ? ((stats.occupied / stats.total_tables) * 100).toFixed(2)
+      : '0.00';
 
     res.status(200).json({ success: true, data: stats });
   } catch (error) {

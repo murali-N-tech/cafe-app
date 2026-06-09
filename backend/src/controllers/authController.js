@@ -11,8 +11,10 @@ exports.register = async (req, res) => {
     const { username, email, phone, password, role_name, cafe_id } = req.body;
 
     // Validation
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'Please provide username, email, and password' });
+    if (!username || !email || !password || !cafe_id) {
+      return res
+        .status(400)
+        .json({ message: 'Please provide username, email, password, and cafe_id' });
     }
 
     // Check if user already exists
@@ -27,6 +29,11 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'Invalid role' });
     }
 
+    const cafe = await Cafe.findById(cafe_id);
+    if (!cafe) {
+      return res.status(400).json({ message: 'Invalid cafe_id' });
+    }
+
     // Create user
     user = await User.create({
       username,
@@ -34,7 +41,7 @@ exports.register = async (req, res) => {
       phone,
       password_hash: password,
       role_id: role._id,
-      cafe_id,
+      cafe_id: cafe._id,
     });
 
     // Generate token
